@@ -47,7 +47,7 @@ export const login = async (req, res, next) => {
          secure: false
      });
  
-     sendResponse(res, STATUS.OK, "User logged in successfully.", role);
+     sendResponse(res, STATUS.OK, `${role} logged in successfully.`);
    } catch (error) {
     next(err)
    }
