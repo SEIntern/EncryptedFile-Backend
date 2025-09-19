@@ -8,49 +8,51 @@ import { generatetoken } from "../utils/generateToken.js";
 import AppError from "../utils/AppError.js";
 import { sendResponse } from "../utils/sendResponse.js";
 import { STATUS } from "../constant/statusCodes.js";
+import { sendEmail } from "../utils/sendEmail.js";
+import { userCredentialsEmail } from "../templates/userCredentialsEmail.js";
 
 
 // login
 export const login = async (req, res, next) => {
-   try {
-     const { email, password, role } = req.body;
-     if (!email || !password || !role)
-         sendResponse(res, STATUS.BAD_REQUEST, "Please provide all fields");
-     if (role !== "admin" && role !== "manager" && role !== "user" && role !== "super_admin")
-         sendResponse(res, STATUS.BAD_REQUEST, "Invalid role")
-     let user;
- 
-     if (role === "admin") {
-         user = await Admin.findOne({ email });
-     }
-     else if (role === "manager") {
-         user = await Manager.findOne({ email });
-     }
-     else if (role === "user") {
-         user = await User.findOne({ email });
-     }
-     else if (role === "super_admin") {
-         user = await SuperAdmin.findOne({ email });
-     }
- 
-     if (!user) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
- 
-     const isMatch = await bcrypt.compare(password, user.password);
-     if (!isMatch) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
- 
-     const token = generatetoken(user._id, role);
- 
-     res.cookie("AuthToken", token, {
-         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-         httpOnly: true,
-         sameSite: "lax",
-         secure: false
-     });
- 
-     sendResponse(res, STATUS.OK, `${role} logged in successfully.`);
-   } catch (error) {
-    next(err)
-   }
+    try {
+        const { email, password, role } = req.body;
+        if (!email || !password || !role)
+            sendResponse(res, STATUS.BAD_REQUEST, "Please provide all fields");
+        if (role !== "admin" && role !== "manager" && role !== "user" && role !== "super_admin")
+            sendResponse(res, STATUS.BAD_REQUEST, "Invalid role")
+        let user;
+
+        if (role === "admin") {
+            user = await Admin.findOne({ email });
+        }
+        else if (role === "manager") {
+            user = await Manager.findOne({ email });
+        }
+        else if (role === "user") {
+            user = await User.findOne({ email });
+        }
+        else if (role === "super_admin") {
+            user = await SuperAdmin.findOne({ email });
+        }
+
+        if (!user) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
+
+        const token = generatetoken(user._id, role);
+
+        res.cookie("AuthToken", token, {
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            httpOnly: true,
+            sameSite: "lax",
+            secure: false
+        });
+
+        sendResponse(res, STATUS.OK, `${role} logged in successfully.`, {role: role});
+    } catch (error) {
+        next(error)
+    }
 
 }
 
@@ -81,8 +83,8 @@ export const getMe = async (req, res, next) => {
 // manager controllers
 export const manager_create_user = async (req, res, next) => {
     const managerId = req.user.userId;
-    console.log(managerId);
     const manager = await Manager.findById(managerId);
+
     if (!manager) {
         return next(new AppError("Manager not found.", STATUS.UNAUTHORIZED));
     }
@@ -92,8 +94,6 @@ export const manager_create_user = async (req, res, next) => {
     }
 
     const adminId = manager.admin_id;
-    console.log(managerId);
-
     const { username, email, password, max_files } = req.body;
 
     try {
@@ -119,11 +119,19 @@ export const manager_create_user = async (req, res, next) => {
         manager.current_user_count += 1;
         await manager.save();
 
-        return sendResponse(res, STATUS.CREATED, "User created successfully.", { user: newUser });
+        // send email with credentials
+        await sendEmail(
+            email,
+            "Your Account Credentials ✔",
+            userCredentialsEmail(username, email, password, "Manager") // send original password here
+        );
+
+        return sendResponse(res, STATUS.CREATED, "User created successfully & credentials emailed.", {});
     } catch (err) {
         next(err);
     }
 };
+
 
 
 
@@ -176,10 +184,15 @@ export const admin_create_manager = async (req, res, next) => {
             admin_id: adminId,
             max_users,
         });
+        await sendEmail(
+            email,
+            "Your Account Credentials ✔",
+            userCredentialsEmail(username, email, password, "Admin") // send original password here
+        );
 
         await newManager.save();
 
-        return sendResponse(res, STATUS.CREATED, "Manager created successfully.", { manager: newManager });
+        return sendResponse(res, STATUS.CREATED, "Manager created successfully & credentials emailed.", {});
     } catch (err) {
         next(err);
     }
@@ -188,10 +201,10 @@ export const admin_create_manager = async (req, res, next) => {
 
 // super admin controllers
 export const Super_admin_create_admin = async (req, res, next) => {
-    const { company_name, email, password, status } = req.body;
+    const { company_name, email, password } = req.body;
 
     try {
-        const existingAdmin = await Manager.findOne({ email })
+        const existingAdmin = await Admin.findOne({ email });
         if (existingAdmin) {
             return sendResponse(res, STATUS.BAD_REQUEST, "Admin with this email already exists.");
         }
@@ -202,11 +215,18 @@ export const Super_admin_create_admin = async (req, res, next) => {
             company_name,
             email,
             password: hashedPassword,
-            status: status
+            status: "approved"
         });
+
+        await sendEmail(
+            email,
+            "Your Account Credentials ✔",
+            userCredentialsEmail(company_name, email, password, "Super_admin" ) // send original password here
+        );
+
         await newAdmin.save();
 
-        return sendResponse(res, STATUS.CREATED, "Admin created successfully.", { Admin: newAdmin });
+        return sendResponse(res, STATUS.CREATED, "Admin created successfully & credentials emailed.", {});
     } catch (err) {
         next(err);
     }

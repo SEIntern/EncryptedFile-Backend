@@ -28,6 +28,9 @@ const adminSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'SubscriptionPlan'
         },
+        razorpay_order_id: String,
+        razorpay_payment_id: String,
+        razorpay_signature: String,
         start_date: Date,
         end_date: Date,
         is_active: {
@@ -46,4 +49,3 @@ const adminSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 export default mongoose.model('Admin', adminSchema);
-
