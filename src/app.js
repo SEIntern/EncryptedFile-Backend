@@ -6,6 +6,8 @@ import cookieParser from "cookie-parser";
 import super_admin_router from './routes/super_admin.route.js';
 import adminRouter from './routes/admin.route.js';
 import managerRouter from './routes/manager.route.js';
+import fileRouter from './routes/file.route.js';
+
 
 const app = express();
 
@@ -17,7 +19,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/superadmin', super_admin_router);
 app.use('/api/admin', adminRouter);
 app.use('/api/manager', managerRouter);
-
+app.use('/api/file', fileRouter);
 
 
 app.use(errorHandler);

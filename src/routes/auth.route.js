@@ -8,13 +8,22 @@ import {
     admin_create_manager, 
     managerLogin, 
     manager_create_user, 
-    userLogin
+    userLogin,
+    getMe
 } from '../controllers/auth.controller.js';
 
 import {  ProtectRoute } from '../middlewares/auth.middleware.js';
 
 
 const AuthRouter = express.Router();
+
+
+
+//me route
+AuthRouter.post('/me', ProtectRoute, getMe);
+
+
+
 
 // user route
 AuthRouter.post('/userlogin', userLogin);

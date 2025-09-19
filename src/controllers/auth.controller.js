@@ -11,6 +11,26 @@ import { STATUS } from "../constant/statusCodes.js";
 
 
 
+// getme
+export const getMe = async (req, res, next) => {
+  try {
+    const userData =
+      (await User.findById(req.user.userId).select("-password")) ||
+      (await Manager.findById(req.user.userId).select("-password")) ||
+      (await Admin.findById(req.user.userId).select("-password")) ||
+      (await SuperAdmin.findById(req.user.userId).select("-password"));
+
+    if (!userData) {
+      return sendResponse(res, STATUS.NOT_FOUND, "User not found");
+    }
+
+    return sendResponse(res, STATUS.OK, "User profile fetched successfully", {
+      user: userData,
+    });
+  } catch (err) {
+    next(err);  
+  }
+};
 
 
 // user controllers
@@ -33,7 +53,7 @@ export const userLogin = async (req, res, next) => {
             secure: false
         });
 
-        sendResponse(res, STATUS.OK, "User logged in successfully.", { user });
+        sendResponse(res, STATUS.OK, "User logged in successfully.", {});
     } catch (err) {
         next(err);
     }
@@ -60,7 +80,7 @@ export const managerLogin = async (req, res, next) => {
             secure: false
         });
 
-        sendResponse(res, STATUS.OK, "Manager logged in successfully.", { manager });
+        sendResponse(res, STATUS.OK, "Manager logged in successfully.", {});
     } catch (err) {
         next(err);
     }
@@ -71,6 +91,10 @@ export const manager_create_user = async (req, res, next) => {
     const manager = await Manager.findById(managerId);
     if (!manager) {
         return next(new AppError("Manager not found.", STATUS.UNAUTHORIZED));
+    }
+
+    if (manager.current_user_count >= manager.max_users) {
+        return sendResponse(res, STATUS.FORBIDDEN, "User creation limit reached for this manager.");
     }
 
     const adminId = manager.admin_id;
@@ -97,6 +121,9 @@ export const manager_create_user = async (req, res, next) => {
         });
 
         await newUser.save();
+
+        manager.current_user_count += 1;
+        await manager.save();
 
         return sendResponse(res, STATUS.CREATED, "User created successfully.", { user: newUser });
     } catch (err) {
@@ -162,7 +189,7 @@ export const adminLogin = async (req, res, next) => {
             secure: false
         });
 
-        sendResponse(res, STATUS.OK, "Admin logged in successfully.", { admin });
+        sendResponse(res, STATUS.OK, "Admin logged in successfully.", {});
     } catch (err) {
         next(err);
     }
@@ -219,7 +246,7 @@ export const super_admin_login = async (req, res, next) => {
             secure: false
         });
 
-        sendResponse(res, STATUS.OK, "Super Admin logged in successfully.", { super_admin });
+        sendResponse(res, STATUS.OK, "Super Admin logged in successfully.", {});
     } catch (err) {
         next(err);
     }
@@ -249,4 +276,3 @@ export const Super_admin_create_admin = async (req, res, next) => {
         next(err);
     }
 };
-
