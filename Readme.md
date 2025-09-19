@@ -91,7 +91,7 @@ The system is divided into multiple roles:
 |--------|----------|------|-------------|
 | **GET** | `/pendingadmins` | – | Get all admins with pending approval requests. |
 | **GET** | `/getadmins` | – | Get all admins in the system. |
-| **PUT** | `/adminrequest/:id` | `{ action }` (`approve` or `reject`) | Handle an admin approval request. |
+| **PUT** | `/adminrequest/:id` | `{ action }` (`approved` or `rejected`) | Handle an admin approval request. |
 | **POST** | `/createplan` | `{ plan_name, duration_days, max_managers, max_users_per_manager, max_files_per_user, price }` | Create a new subscription plan. |
 
 ---
