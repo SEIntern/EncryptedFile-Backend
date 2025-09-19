@@ -1,3 +1,4 @@
+import axios from "axios";
 import { sendResponse } from "../utils/sendResponse.js";
 import { STATUS } from "../constant/statusCodes.js";
 import CryptoJS from "crypto-js";
@@ -81,7 +82,6 @@ export const uploadFile = async (req, res, next) => {
   }
 };
 
-import axios from "axios";
 
 
 export const downloadFile = async (req, res, next) => {
@@ -127,11 +127,43 @@ export const downloadFile = async (req, res, next) => {
       "Content-Type": "application/octet-stream",
     });
 
-    sendResponse(res, STATUS.OK, "File downloaded successfully", {
-      file: decryptedBuffer,
-    });
+    return res.end(decryptedBuffer);
   } catch (err) {
     next(err);
   }
 };
 
+export const deleteFile = async (req, res, next) => {
+  try {
+    const { id: fileId } = req.params;
+    const userId = req.user.userId;
+
+    // Find the file by its ID
+    const file = await File.findById(fileId);
+    if (!file) {
+      return sendResponse(res, STATUS.NOT_FOUND, "File not found");
+    }
+
+    // Ensure the user requesting deletion is the owner of the file
+    if (file.user_id.toString() !== userId) {
+      return sendResponse(
+        res,
+        STATUS.FORBIDDEN,
+        "You are not authorized to delete this file"
+      );
+    }
+
+    // Delete the file from Cloudinary using its public_id
+    await cloudinary.uploader.destroy(file.public_id, { resource_type: "raw" });
+
+    // Delete the file record from the database
+    await File.findByIdAndDelete(fileId);
+
+    // Decrement the user's file count
+    await User.findByIdAndUpdate(userId, { $inc: { current_file_count: -1 } });
+
+    return sendResponse(res, STATUS.OK, "File deleted successfully");
+  } catch (err) {
+    next(err);
+  }
+};

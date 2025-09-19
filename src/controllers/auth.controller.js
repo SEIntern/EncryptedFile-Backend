@@ -10,81 +10,75 @@ import { sendResponse } from "../utils/sendResponse.js";
 import { STATUS } from "../constant/statusCodes.js";
 
 
+// login
+export const login = async (req, res, next) => {
+   try {
+     const { email, password, role } = req.body;
+     if (!email || !password || !role)
+         sendResponse(res, STATUS.BAD_REQUEST, "Please provide all fields");
+     if (role !== "admin" && role !== "manager" && role !== "user" && role !== "super_admin")
+         sendResponse(res, STATUS.BAD_REQUEST, "Invalid role")
+     let user;
+ 
+     if (role === "admin") {
+         user = await Admin.findOne({ email });
+     }
+     else if (role === "manager") {
+         user = await Manager.findOne({ email });
+     }
+     else if (role === "user") {
+         user = await User.findOne({ email });
+     }
+     else if (role === "super_admin") {
+         user = await SuperAdmin.findOne({ email });
+     }
+ 
+     if (!user) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
+ 
+     const isMatch = await bcrypt.compare(password, user.password);
+     if (!isMatch) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
+ 
+     const token = generatetoken(user._id, role);
+ 
+     res.cookie("AuthToken", token, {
+         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+         httpOnly: true,
+         sameSite: "lax",
+         secure: false
+     });
+ 
+     sendResponse(res, STATUS.OK, "User logged in successfully.", role);
+   } catch (error) {
+    next(err)
+   }
+
+}
 
 // getme
 export const getMe = async (req, res, next) => {
-  try {
-    const userData =
-      (await User.findById(req.user.userId).select("-password")) ||
-      (await Manager.findById(req.user.userId).select("-password")) ||
-      (await Admin.findById(req.user.userId).select("-password")) ||
-      (await SuperAdmin.findById(req.user.userId).select("-password"));
+    try {
+        const userData =
+            (await User.findById(req.user.userId).select("-password")) ||
+            (await Manager.findById(req.user.userId).select("-password")) ||
+            (await Admin.findById(req.user.userId).select("-password")) ||
+            (await SuperAdmin.findById(req.user.userId).select("-password"));
 
-    if (!userData) {
-      return sendResponse(res, STATUS.NOT_FOUND, "User not found");
+        if (!userData) {
+            return sendResponse(res, STATUS.NOT_FOUND, "User not found");
+        }
+
+        return sendResponse(res, STATUS.OK, "User profile fetched successfully", {
+            user: userData,
+        });
+    } catch (err) {
+        next(err);
     }
-
-    return sendResponse(res, STATUS.OK, "User profile fetched successfully", {
-      user: userData,
-    });
-  } catch (err) {
-    next(err);  
-  }
 };
 
 
-// user controllers
-export const userLogin = async (req, res, next) => {
-    const { email, password } = req.body;
-    try {
-        let user = await User.findOne({ email })
-
-        if (!user) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
-
-        const token = generatetoken(user._id);
-
-        res.cookie("AuthToken", token, {
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            httpOnly: true,
-            sameSite: "lax",
-            secure: false
-        });
-
-        sendResponse(res, STATUS.OK, "User logged in successfully.", {});
-    } catch (err) {
-        next(err);
-    }
-}
 
 
 // manager controllers
-export const managerLogin = async (req, res, next) => {
-    const { email, password } = req.body;
-    try {
-        let manager = await Manager.findOne({ email })
-
-        if (!manager) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
-
-        const isMatch = await bcrypt.compare(password, manager.password);
-        if (!isMatch) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
-
-        const token = generatetoken(manager._id);
-
-        res.cookie("AuthToken", token, {
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            httpOnly: true,
-            sameSite: "lax",
-            secure: false
-        });
-
-        sendResponse(res, STATUS.OK, "Manager logged in successfully.", {});
-    } catch (err) {
-        next(err);
-    }
-}
 export const manager_create_user = async (req, res, next) => {
     const managerId = req.user.userId;
     console.log(managerId);
@@ -160,40 +154,6 @@ export const adminSignup = async (req, res, next) => {
     }
 }
 
-export const adminLogin = async (req, res, next) => {
-    const { email, password } = req.body;
-    console.log(req.user);
-    try {
-        let admin = await Admin.findOne({ email })
-
-        if (!admin) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
-
-        const isMatch = await bcrypt.compare(password, admin.password);
-        if (!isMatch) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
-
-
-        if (admin.status === "pending") {
-            //   return res.status(403).json({ message: "Your account is pending approval." });
-            return sendResponse(res, STATUS.FORBIDDEN, "Your account approval is pending.");
-        }
-        if (admin.status === "rejected") {
-            return sendResponse(res, STATUS.FORBIDDEN, "Your account is rejected. Contact admin for more details.");
-        }
-
-        const token = generatetoken(admin._id);
-
-        res.cookie("AuthToken", token, {
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            httpOnly: true,
-            sameSite: "lax",
-            secure: false
-        });
-
-        sendResponse(res, STATUS.OK, "Admin logged in successfully.", {});
-    } catch (err) {
-        next(err);
-    }
-}
 
 export const admin_create_manager = async (req, res, next) => {
     const adminId = req.user.userId;
@@ -227,31 +187,6 @@ export const admin_create_manager = async (req, res, next) => {
 
 
 // super admin controllers
-export const super_admin_login = async (req, res, next) => {
-    const { email, password } = req.body;
-    try {
-        let super_admin = await SuperAdmin.findOne({ email })
-
-        if (!super_admin) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
-
-        const isMatch = await bcrypt.compare(password, super_admin.password);
-        if (!isMatch) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
-
-        const token = generatetoken(super_admin._id);
-
-        res.cookie("AuthToken", token, {
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            httpOnly: true,
-            sameSite: "lax",
-            secure: false
-        });
-
-        sendResponse(res, STATUS.OK, "Super Admin logged in successfully.", {});
-    } catch (err) {
-        next(err);
-    }
-}
-
 export const Super_admin_create_admin = async (req, res, next) => {
     const { company_name, email, password, status } = req.body;
 
