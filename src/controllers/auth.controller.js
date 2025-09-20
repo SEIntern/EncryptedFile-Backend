@@ -12,14 +12,15 @@ import { sendEmail } from "../utils/sendEmail.js";
 import { userCredentialsEmail } from "../templates/userCredentialsEmail.js";
 
 
+
 // login
 export const login = async (req, res, next) => {
     try {
         const { email, password, role } = req.body;
         if (!email || !password || !role)
-            sendResponse(res, STATUS.BAD_REQUEST, "Please provide all fields");
+            return sendResponse(res, STATUS.BAD_REQUEST, "Please provide all fields");
         if (role !== "admin" && role !== "manager" && role !== "user" && role !== "super_admin")
-            sendResponse(res, STATUS.BAD_REQUEST, "Invalid role")
+            return sendResponse(res, STATUS.BAD_REQUEST, "Invalid role")
         let user;
 
         if (role === "admin") {
@@ -36,6 +37,9 @@ export const login = async (req, res, next) => {
         }
 
         if (!user) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
+
+        if(role === "admin" && user.status !== "approved") return sendResponse(res, STATUS.FORBIDDEN, "Admin not approved")
+        if(user.isBlocked && role !== "super_admin") return sendResponse(res, STATUS.FORBIDDEN, "Your Organization is blocked")
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return next(new AppError("Invalid credentials", STATUS.BAD_REQUEST));
@@ -120,7 +124,7 @@ export const manager_create_user = async (req, res, next) => {
         await manager.save();
 
         // send email with credentials
-        await sendEmail(
+        sendEmail(
             email,
             "Your Account Credentials ✔",
             userCredentialsEmail(username, email, password, "Manager") // send original password here
@@ -143,7 +147,7 @@ export const adminSignup = async (req, res, next) => {
     try {
         const existing = await Admin.findOne({ email });
         if (existing)
-            sendResponse(res, STATUS.BAD_REQUEST, "Admin with this email already exists.");
+            return sendResponse(res, STATUS.BAD_REQUEST, "Admin with this email already exists.");
 
         const hashed = await bcrypt.hash(password, 10);
 
@@ -184,7 +188,7 @@ export const admin_create_manager = async (req, res, next) => {
             admin_id: adminId,
             max_users,
         });
-        await sendEmail(
+        sendEmail(
             email,
             "Your Account Credentials ✔",
             userCredentialsEmail(username, email, password, "Admin") // send original password here
@@ -218,7 +222,7 @@ export const Super_admin_create_admin = async (req, res, next) => {
             status: "approved"
         });
 
-        await sendEmail(
+        sendEmail(
             email,
             "Your Account Credentials ✔",
             userCredentialsEmail(company_name, email, password, "Super_admin" ) // send original password here

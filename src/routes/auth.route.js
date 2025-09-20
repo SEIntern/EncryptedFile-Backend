@@ -9,7 +9,10 @@ import {
     getMe
 } from '../controllers/auth.controller.js';
 
-import { ProtectRoute } from '../middlewares/auth.middleware.js';
+import { 
+    ProtectRoute,
+authorizeRoles
+} from '../middlewares/auth.middleware.js';
 
 
 const AuthRouter = express.Router();
@@ -21,14 +24,14 @@ AuthRouter.post('/login', login);
 AuthRouter.post('/me', ProtectRoute, getMe);
 
 // manager route 
-AuthRouter.post('/createuser', ProtectRoute, manager_create_user);
+AuthRouter.post('/createuser', ProtectRoute, authorizeRoles("manager"), manager_create_user);
 
 // admin route
 AuthRouter.post('/adminsignup', adminSignup);
-AuthRouter.post('/createmanager', ProtectRoute, admin_create_manager);
+AuthRouter.post('/createmanager', ProtectRoute, authorizeRoles("admin"), admin_create_manager);
 
 // super admin route
-AuthRouter.post('/createadmin', ProtectRoute, Super_admin_create_admin);
+AuthRouter.post('/createadmin', ProtectRoute, authorizeRoles("super_admin"), Super_admin_create_admin);
 
 
 export default AuthRouter;

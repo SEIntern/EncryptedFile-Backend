@@ -24,7 +24,7 @@ export const handle_admin_request = async (req, res, next) => {
         const admin = await Admin.findById(req.params.id);
 
         if (!admin) {
-            sendResponse(res, STATUS.NOT_FOUND, "Admin not found.");
+            return sendResponse(res, STATUS.NOT_FOUND, "Admin not found.");
         }
 
         if (action === "approved") {

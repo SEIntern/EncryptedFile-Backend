@@ -35,7 +35,12 @@ const managerSchema = new mongoose.Schema({
     current_user_count: {
         type: Number,
         default: 0
+    },
+    isBlocked: {
+        type: Boolean,
+        default: false
     }
+
 }, { timestamps: true });
 
 export default mongoose.model('Manager', managerSchema);

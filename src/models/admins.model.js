@@ -45,6 +45,10 @@ const adminSchema = new mongoose.Schema({
     is_subscription_expired: {
         type: Boolean,
         default: false
+    },
+    isBlocked: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 

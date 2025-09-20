@@ -40,7 +40,7 @@ export const handle_file_request = async (req, res, next) => {
         const file = await File.findById(req.params.id);
 
         if (!file) {
-            sendResponse(res, STATUS.NOT_FOUND, "File not found.");
+            return sendResponse(res, STATUS.NOT_FOUND, "File not found.");
         }
 
         if (action === "approved") {
@@ -52,6 +52,20 @@ export const handle_file_request = async (req, res, next) => {
             return sendResponse(res, STATUS.BAD_REQUEST, "Invalid action. Use 'approve' or 'reject'.");
         }
         sendResponse(res, STATUS.OK, `File request ${action} successfully.`);
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const get_user_file = async (req, res, next) => {
+    const userId = req.params.id;
+    console.log(userId);
+    try {
+        const files = await File.find({ user_id: userId });
+        if (!files || files.length === 0) {
+            return sendResponse(res, STATUS.OK, "No files found for this user.", { files: [] });
+        }
+        sendResponse(res, STATUS.OK, "File fetched successfully.", { files });
     } catch (err) {
         next(err);
     }

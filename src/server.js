@@ -3,6 +3,8 @@ dotenv.config();
 
 import app from './app.js';
 import connectDB from './config/connectDB.js';
+import './cron/subscriptionCheck.js';
+
 
 const PORT = process.env.PORT || 5000;
 

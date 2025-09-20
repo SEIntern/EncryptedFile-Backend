@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema({
     current_file_count: {
         type: Number,
         default: 0
+    },
+    isBlocked: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 

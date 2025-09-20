@@ -1,4 +1,6 @@
 import jwt from "jsonwebtoken";
+import { sendResponse } from "../utils/sendResponse.js";
+import { STATUS } from "../constant/statusCodes.js";
 
 
 export const ProtectRoute =(req,res,next)=>{
@@ -16,3 +18,11 @@ export const ProtectRoute =(req,res,next)=>{
 }
 
 
+export const authorizeRoles = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return sendResponse(res, STATUS.FORBIDDEN, "Access denied");
+    }
+    next();
+  };
+};

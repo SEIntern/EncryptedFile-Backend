@@ -3,6 +3,8 @@ import { STATUS } from "../constant/statusCodes.js";
 import User from "../models/users.model.js";
 import Manager from "../models/managers.model.js";
 import File from "../models/files.model.js";
+import Admin from "../models/admins.model.js";
+import SubscriptionPlan from "../models/subscription_plans.model.js";
 
 
 
@@ -37,6 +39,24 @@ export const get_user_file = async (req, res, next) => {
             return sendResponse(res, STATUS.OK, "No files found for this user.", { files: [] });
         }
         sendResponse(res, STATUS.OK, "File fetched successfully.", { files });
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const get_admin_plan = async (req, res, next) => {
+    const adminId = req.user.userId;
+    try {
+        const admin = await Admin.findById(adminId);
+        if (!admin) {
+            return sendResponse(res, STATUS.NOT_FOUND, "Admin not found.");
+        }  
+        const subscriptionPlan = admin.subscription.plan_id;
+        const plan = await SubscriptionPlan.findById(subscriptionPlan);
+        if (!subscriptionPlan) {
+            return sendResponse(res, STATUS.NOT_FOUND, "Subscription plan not found for this admin.");
+        }
+        sendResponse(res, STATUS.OK, "Subscription plan fetched successfully.", { plan });
     } catch (err) {
         next(err);
     }
