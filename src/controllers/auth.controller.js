@@ -62,6 +62,7 @@ export const login = async (req, res, next) => {
 
 // getme
 export const getMe = async (req, res, next) => {
+    const role = req.user.role;
     try {
         const userData =
             (await User.findById(req.user.userId).select("-password")) ||
@@ -74,7 +75,7 @@ export const getMe = async (req, res, next) => {
         }
 
         return sendResponse(res, STATUS.OK, "User profile fetched successfully", {
-            user: userData,
+            user: userData,role: role
         });
     } catch (err) {
         next(err);

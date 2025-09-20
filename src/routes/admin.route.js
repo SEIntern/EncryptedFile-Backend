@@ -4,7 +4,8 @@ import {
     get_all_manager, 
     get_all_user, 
     get_user_file, 
-    get_admin_plan 
+    get_admin_plan,
+    get_user_by_manager
 } from '../controllers/admin.controller.js';
 
 import {  
@@ -22,6 +23,7 @@ adminRouter.use(ProtectRoute);
 adminRouter.use(authorizeRoles("admin"));
 
 adminRouter.get('/getusers', get_all_user);
+adminRouter.get('/userbymanager/:id', get_user_by_manager);
 adminRouter.get('/getmanagers', get_all_manager);
 adminRouter.get('/user/:id', get_user_file);
 adminRouter.get("/getplan",get_admin_plan)

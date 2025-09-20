@@ -18,6 +18,16 @@ export const get_all_user = async (req, res, next) => {
         next(err);
     }
 };
+export const get_user_by_manager = async (req, res, next) => {
+    const adminID = req.user.userId;
+    const managerId = req.params.id;
+    try {
+        const users = await User.find({admin_id: adminID,manager_id: managerId})
+        sendResponse(res, STATUS.OK, "All User fetched successfully.", { users });
+    } catch (err) {
+        next(err);
+    }
+};
 
 export const get_all_manager = async (req, res, next) => {
     const adminID = req.user.userId;
