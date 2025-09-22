@@ -6,12 +6,13 @@ import {
     admin_create_manager,
     manager_create_user,
     login,
-    getMe
+    getMe,
+    logout
 } from '../controllers/auth.controller.js';
 
-import { 
+import {
     ProtectRoute,
-authorizeRoles
+    authorizeRoles
 } from '../middlewares/auth.middleware.js';
 
 
@@ -19,7 +20,7 @@ const AuthRouter = express.Router();
 
 // login
 AuthRouter.post('/login', login);
-
+AuthRouter.post('/logout', ProtectRoute, logout);
 //me route
 AuthRouter.post('/me', ProtectRoute, getMe);
 
