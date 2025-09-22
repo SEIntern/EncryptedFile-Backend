@@ -3,7 +3,6 @@ import User from "../models/users.model.js";
 import Admin from "../models/admins.model.js";
 import Manager from "../models/managers.model.js";
 import SuperAdmin from "../models/super_admin.model.js";
-import jwt from "jsonwebtoken"
 import { generatetoken } from "../utils/generateToken.js";
 import AppError from "../utils/AppError.js";
 import { sendResponse } from "../utils/sendResponse.js";
@@ -13,7 +12,7 @@ import { userCredentialsEmail } from "../templates/userCredentialsEmail.js";
 
 
 
-// login
+
 export const login = async (req, res, next) => {
     try {
         const { email, password, role } = req.body;
@@ -59,8 +58,6 @@ export const login = async (req, res, next) => {
     }
 
 }
-
-// getme
 export const getMe = async (req, res, next) => {
     const role = req.user.role;
     try {
@@ -81,7 +78,19 @@ export const getMe = async (req, res, next) => {
         next(err);
     }
 };
+export const logout = async (req, res, next) => {
+  try {
+    res.clearCookie("AuthToken", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false, // set true if using HTTPS in production
+    });
 
+    sendResponse(res, STATUS.OK, "Logged out successfully");
+  } catch (error) {
+    next(error);
+  }
+};
 
 
 
@@ -166,8 +175,6 @@ export const adminSignup = async (req, res, next) => {
         next(err);
     }
 }
-
-
 export const admin_create_manager = async (req, res, next) => {
     const adminId = req.user.userId;
     // console.log(adminId); 
