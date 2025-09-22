@@ -21,7 +21,7 @@ const AuthRouter = express.Router();
 AuthRouter.post('/login', login);
 
 //me route
-AuthRouter.post('/me', ProtectRoute, getMe);
+AuthRouter.get('/me', ProtectRoute, getMe);
 
 // manager route 
 AuthRouter.post('/createuser', ProtectRoute, authorizeRoles("manager"), manager_create_user);
